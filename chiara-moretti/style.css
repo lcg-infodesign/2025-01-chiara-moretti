@@ -1,6 +1,7 @@
 html, body {
   margin: 0;
   padding: 0;
+  font-family: 'Helvetica', Arial, sans-serif;
 }
 
 canvas {
@@ -18,4 +19,30 @@ h2 {
 
 .header {
   font-size: 1.1rem;
+}
+
+/* Stili per la tabella header centrale */
+.header-table {
+  display: flex;
+  justify-content: center; /* centra orizzontalmente */
+  margin-top: 6px;
+}
+
+.header-table table {
+  border-collapse: collapse;
+  background: rgba(255,255,255,0.95); /* sfondo chiaro per leggibilità */
+  color: #000; /* testo nero per sfondi bianchi */
+  font-size: 0.95rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+
+.header-table th, .header-table td {
+  padding: 6px 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.header-table th {
+  font-weight: 600;
+  background: rgba(0,0,0,0.03);
 }

@@ -8,8 +8,25 @@ function preload () {
     table = loadTable("dataset.csv", "csv", "header")
 }
 
+// Calcola l'altezza disponibile per il canvas sottraendo l'altezza della tabella header
+function getAvailableCanvasHeight() {
+    try {
+        const header = document.getElementById('header-table');
+        const headerH = header ? header.getBoundingClientRect().height : 0;
+        const marginBelow = 8; // margine aggiuntivo
+        return Math.max(200, windowHeight - headerH - marginBelow);
+    } catch (e) {
+        return windowHeight;
+    }
+}
+
 function setup() {
-    createCanvas(windowWidth, windowHeight);
+    // crea canvas usando l'altezza disponibile così da far stare tutto in una pagina
+    createCanvas(windowWidth, getAvailableCanvasHeight());
+    // Imposta il font Helvetica per i testi disegnati nel canvas (se disponibile)
+    try { textFont('Helvetica'); } catch (e) { /* fallback automatico */ }
+    // Imposta il font Helvetica per i testi disegnati nel canvas (se disponibile)
+    try { textFont('Helvetica'); } catch (e) { /* fallback automatico */ }
 
     if (!table) return;
 
@@ -90,27 +107,35 @@ function setup() {
     }
 
     background(0);
-    fill(255);
-    // header text size ridotto
-    textSize(12);
-    textAlign(LEFT, TOP);
-    text("Media colonna 0 (filtrata): " + nf(average, 1, 2), 16, 16);
-    text("Dev. std colonna 1 (filtrata): " + nf(std1, 1, 2), 16, 36);
-    text("Moda colonna 2 (filtrata): " + nf(mode2, 1, 2), 16, 56);
-    text("Media e σ colonna 4 (filtrata): μ=" + nf(mean4, 1, 2) + ", σ=" + nf(std4, 1, 2), 16, 76);
-    text("Mediana colonna 4 (filtrata): " + nf(median4, 1, 2), 16, 96);
+
+    // Prepariamo i valori da mostrare nella tabella header HTML
+    let headerItems = [
+        {label: 'Media colonna 0 (filtrata)', value: nf(average, 1, 2)},
+        {label: 'Dev. std colonna 1 (filtrata)', value: nf(std1, 1, 2)},
+        {label: 'Moda colonna 2 (filtrata)', value: nf(mode2, 1, 2)},
+        {label: 'Media colonna 4 (filtrata) μ', value: nf(mean4, 1, 2)},
+        {label: 'Dev. std colonna 4 (filtrata) σ', value: nf(std4, 1, 2)},
+        {label: 'Mediana colonna 4 (filtrata)', value: nf(median4, 1, 2)}
+    ];
+
+    // renderizziamo la tabella header (HTML)
+    if (typeof document !== 'undefined') {
+        renderHeaderTable(headerItems);
+    }
 
     // ---------------- Primo grafico: colonne + linea media (stile Excel) ----------------
     const left = 40;
     const right = width - 40;
 
     // layout condiviso per avere tre grafici della stessa altezza
-    const topMargin = 80;
-    const headerGap = 40; // extra space between header and first graph
-    const bottomMargin = 30;
-    const gapBetween = 80; // space between graphs (unchanged)
+    // spazi ridotti per far stare tutto su una pagina
+    const topMargin = 40;
+    const headerGap = 8; // extra space between header and first graph (ridotto)
+    const bottomMargin = 20;
+    const gapBetween = 40; // spazio tra grafici ridotto
+    const chartsScale = 0.90; // percentuale dello spazio interno da assegnare ai grafici
     const totalInnerH = height - topMargin - headerGap - bottomMargin - gapBetween * 2;
-    const panelH = Math.max(60, totalInnerH / 3);
+    const panelH = Math.max(60, (totalInnerH * chartsScale) / 3); // altezza per ogni pannello
 
     const chart1Top = topMargin + headerGap;
     const chart1Bottom = chart1Top + panelH;
@@ -132,6 +157,13 @@ function setup() {
     strokeWeight(2);
     line(left, chart1Bottom, right, chart1Bottom); // X
     line(left, chart1Top, left, chart1Bottom);     // Y
+
+    // titolo del primo grafico
+    noStroke();
+    fill(255);
+    textSize(12);
+    textAlign(LEFT, BOTTOM);
+    text("Istogramma colonna 0 (filtrata) – colonne e linea media", left, chart1Top - 8);
 
     // tick asse Y con "nice" step in base al range
     const niceStep = (minV, maxV, targetTicks = 8) => {
@@ -435,5 +467,32 @@ function setup() {
 }
 
 function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+    // ridimensiona il canvas tenendo conto dell'altezza della tabella header
+    resizeCanvas(windowWidth, getAvailableCanvasHeight());
+    redraw();
+}
+
+// Costruisce una tabella HTML con i valori header e la inserisce nel DOM
+function renderHeaderTable(items) {
+    try {
+        const container = document.getElementById('header-table');
+        if (!container) return;
+
+        let html = '<table aria-label="Valori header">';
+        html += '<thead><tr>';
+        for (const it of items) {
+            html += `<th>${it.label}</th>`;
+        }
+        html += '</tr></thead>';
+        html += '<tbody><tr>';
+        for (const it of items) {
+            html += `<td>${it.value}</td>`;
+        }
+        html += '</tr></tbody>';
+        html += '</table>';
+
+        container.innerHTML = html;
+    } catch (e) {
+        console.warn('renderHeaderTable failed:', e);
+    }
 }
