@@ -124,8 +124,8 @@ function setup() {
     }
 
     // ---------------- Primo grafico: colonne + linea media (stile Excel) ----------------
-    const left = 40;
-    const right = width - 40;
+    const left = 120; // aumentato ulteriormente per rendere i grafici ancora meno larghi
+    const right = width - 120;
 
     // layout condiviso per avere tre grafici della stessa altezza
     // spazi ridotti per far stare tutto su una pagina
@@ -161,7 +161,7 @@ function setup() {
     // titolo del primo grafico
     noStroke();
     fill(255);
-    textSize(12);
+    textSize(10);
     textAlign(LEFT, BOTTOM);
     text("Istogramma colonna 0 (filtrata) – colonne e linea media", left, chart1Top - 8);
 
@@ -416,8 +416,8 @@ function setup() {
     noStroke();
     fill(255);
     textAlign(CENTER, TOP);
-    text("−σ", bandLeft4, chart3Top + 6);
-    text("+σ", bandRight4, chart3Top + 6);
+    text("μ−σ", bandLeft4, chart3Top + 6);
+    text("μ+σ", bandRight4, chart3Top + 6);
 
     // linea orizzontale alla media (stile grafico 1)
     const yMean4 = chart3Top + (chart3Bottom - chart3Top) * 0.5; // posizione fissa a metà altezza
