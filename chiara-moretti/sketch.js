@@ -9,7 +9,7 @@ function preload () {
 }
 
 function setup() {
-    createCanvas(1100, 950);
+    createCanvas(windowWidth, windowHeight);
 
     if (!table) return;
 
@@ -47,18 +47,77 @@ function setup() {
         maxVal1 = Math.max(...col1);
     }
 
+    // moda colonna 2 (filtrata)
+    const col2 = validRows.map(r => r[2]);
+    let mode2 = 0;
+    if (col2.length > 0) {
+        const counts = new Map();
+        for (const v of col2) {
+            counts.set(v, (counts.get(v) || 0) + 1);
+        }
+        let modeCount = 0;
+        counts.forEach((count, value) => {
+            if (count > modeCount) {
+                modeCount = count;
+                mode2 = value;
+            }
+        });
+    }
+
+    // media, deviazione standard e mediana colonna 4 (filtrata)
+    const col4 = validRows.map(r => r[4]);
+    let std4 = 0;
+    let mean4 = 0;
+    let median4 = 0;
+    let minVal4 = 0;
+    let maxVal4 = 1;
+    if (col4.length > 1) {
+        mean4 = col4.reduce((a, b) => a + b, 0) / col4.length;
+        const sumSq4 = col4.reduce((a, v) => a + (v - mean4) * (v - mean4), 0);
+        std4 = Math.sqrt(sumSq4 / (col4.length - 1));
+        minVal4 = Math.min(...col4);
+        maxVal4 = Math.max(...col4);
+        
+        // calcolo mediana
+        const sortedCol4 = [...col4].sort((a, b) => a - b);
+        const n4 = sortedCol4.length;
+        if (n4 % 2 === 1) {
+            median4 = sortedCol4[(n4 - 1) / 2];
+        } else {
+            const mid = n4 / 2;
+            median4 = (sortedCol4[mid - 1] + sortedCol4[mid]) / 2;
+        }
+    }
+
     background(0);
     fill(255);
-    textSize(16);
+    // header text size ridotto
+    textSize(12);
     textAlign(LEFT, TOP);
     text("Media colonna 0 (filtrata): " + nf(average, 1, 2), 16, 16);
     text("Dev. std colonna 1 (filtrata): " + nf(std1, 1, 2), 16, 36);
+    text("Moda colonna 2 (filtrata): " + nf(mode2, 1, 2), 16, 56);
+    text("Media e σ colonna 4 (filtrata): μ=" + nf(mean4, 1, 2) + ", σ=" + nf(std4, 1, 2), 16, 76);
+    text("Mediana colonna 4 (filtrata): " + nf(median4, 1, 2), 16, 96);
 
     // ---------------- Primo grafico: colonne + linea media (stile Excel) ----------------
     const left = 40;
     const right = width - 40;
-    const chart1Top = 70;
-    const chart1Bottom = height * 0.58;
+
+    // layout condiviso per avere tre grafici della stessa altezza
+    const topMargin = 80;
+    const headerGap = 40; // extra space between header and first graph
+    const bottomMargin = 30;
+    const gapBetween = 80; // space between graphs (unchanged)
+    const totalInnerH = height - topMargin - headerGap - bottomMargin - gapBetween * 2;
+    const panelH = Math.max(60, totalInnerH / 3);
+
+    const chart1Top = topMargin + headerGap;
+    const chart1Bottom = chart1Top + panelH;
+    const chart2Top = chart1Bottom + gapBetween;
+    const chart2Bottom = chart2Top + panelH;
+    const chart3Top = chart2Bottom + gapBetween;
+    const chart3Bottom = chart3Top + panelH;
 
     // scala Y per i valori di colonna 0
     const dataMin = sortedArr.length > 0 ? Math.min(...sortedArr) : 0;
@@ -155,8 +214,8 @@ function setup() {
     text(nf(dataMin, 1, 0), left - 8, yForVal0(dataMin));
 
     // ---------------- Secondo grafico: curva normale con banda ±1σ (stile didattico) ----------------
-    const chartTop = height * 0.68; // moved lower to avoid overlap with first chart
-    const chartBottom = height - 30;
+    const chartTop = chart2Top;
+    const chartBottom = chart2Bottom;
     const chartLeft = left;
     const chartRight = right;
 
@@ -263,4 +322,118 @@ function setup() {
     text("μ", xMu, chartTop + 6);
     text("μ−σ", xMuL, chartTop + 6);
     text("μ+σ", xMuR, chartTop + 6);
+
+    // ---------------- Terzo grafico: istogramma colonna 4 con μ e ±1σ ----------------
+    const chart3Left = left;
+    const chart3Right = right;
+
+    // assi
+    stroke(200);
+    strokeWeight(2);
+    line(chart3Left, chart3Bottom, chart3Right, chart3Bottom); // X
+    line(chart3Left, chart3Top, chart3Left, chart3Bottom);     // Y
+
+    // istogramma col4
+    const binCount4 = 16;
+    const bins4 = new Array(binCount4).fill(0);
+    const range4 = (maxVal4 - minVal4) || 1;
+    const binWVal4 = range4 / binCount4;
+    for (let i = 0; i < col4.length; i++) {
+        const v = col4[i];
+        let idx = Math.floor((v - minVal4) / range4 * binCount4);
+        if (idx < 0) idx = 0;
+        if (idx >= binCount4) idx = binCount4 - 1;
+        bins4[idx]++;
+    }
+    const maxBin4 = bins4.length ? Math.max(...bins4) : 1;
+
+    const xForVal4 = (v) => {
+        if (maxVal4 === minVal4) return (chart3Left + chart3Right) * 0.5;
+        const t = constrain((v - minVal4) / (maxVal4 - minVal4), 0, 1);
+        return chart3Left + t * (chart3Right - chart3Left);
+    };
+    const yForCount4 = (c) => {
+        const t = maxBin4 ? c / maxBin4 : 0;
+        return chart3Bottom - t * (chart3Bottom - chart3Top);
+    };
+
+    noStroke();
+    fill(120, 170, 250, 190);
+    for (let b = 0; b < binCount4; b++) {
+        const binStartVal = minVal4 + b * binWVal4;
+        const binEndVal = binStartVal + binWVal4;
+        const x1c = xForVal4(binStartVal);
+        const x2c = xForVal4(binEndVal);
+        const barWc = Math.max(1, x2c - x1c - 1);
+        const yTopc = yForCount4(bins4[b]);
+        rect(x1c + 0.5, yTopc, barWc, chart3Bottom - yTopc);
+    }
+
+    // banda ±1σ e linea media per col4
+    const bandLeft4 = xForVal4(mean4 - std4);
+    const bandRight4 = xForVal4(mean4 + std4);
+    noStroke();
+    fill(240, 120, 90, 90);
+    rect(Math.min(bandLeft4, bandRight4), chart3Top, Math.abs(bandRight4 - bandLeft4), chart3Bottom - chart3Top);
+
+    // marcatori ai bordi della ±1σ
+    stroke(240, 120, 90, 220);
+    strokeWeight(2);
+    line(bandLeft4, chart3Top, bandLeft4, chart3Bottom);
+    line(bandRight4, chart3Top, bandRight4, chart3Bottom);
+    noStroke();
+    fill(255);
+    textAlign(CENTER, TOP);
+    text("−σ", bandLeft4, chart3Top + 6);
+    text("+σ", bandRight4, chart3Top + 6);
+
+    // linea orizzontale alla media (stile grafico 1)
+    const yMean4 = chart3Top + (chart3Bottom - chart3Top) * 0.5; // posizione fissa a metà altezza
+    stroke(240, 120, 90);
+    strokeWeight(2);
+    line(chart3Left, yMean4, chart3Right, yMean4);
+    noStroke();
+    fill(240, 120, 90);
+    textAlign(LEFT, BOTTOM);
+    text("media = " + nf(mean4, 1, 2), chart3Left + 6, yMean4 - 4);
+
+    // ticks X ogni 10
+    stroke(170);
+    strokeWeight(1);
+    fill(255);
+    textSize(10);
+    textAlign(CENTER, TOP);
+    if (maxVal4 !== minVal4) {
+        const stepX4 = 10;
+        const startX4 = Math.ceil(minVal4 / stepX4) * stepX4;
+        const endX4 = Math.floor(maxVal4 / stepX4) * stepX4;
+        for (let v = startX4; v <= endX4; v += stepX4) {
+            const xx = xForVal4(v);
+            line(xx, chart3Bottom, xx, chart3Bottom + 6);
+            text(v, xx, chart3Bottom + 8);
+        }
+    }
+
+    // ticks Y ogni 10 (conteggi dell'istogramma)
+    textAlign(RIGHT, CENTER);
+    if (maxBin4 > 0) {
+        const stepY4 = niceStep(0, maxBin4, 6);
+        for (let v = 0; v <= maxBin4 + 1e-9; v += stepY4) {
+            const yy = yForCount4(v);
+            line(chart3Left - 4, yy, chart3Left, yy);
+            text(nf(v, 1, 0), chart3Left - 8, yy);
+        }
+    }
+
+    // etichette
+    noStroke();
+    fill(255);
+    textAlign(LEFT, BOTTOM);
+    text("Istogramma colonna 4 (filtrata) con μ e ±1σ", chart3Left, chart3Top - 8);
+    textAlign(LEFT, TOP);
+    text("μ = " + nf(mean4, 1, 2) + ", σ = " + nf(std4, 1, 2), chart3Left + 4, chart3Top + 6);
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
 }

@@ -6,3 +6,16 @@ html, body {
 canvas {
   display: block;
 }
+
+/* header HTML più piccolo */
+h1 {
+  font-size: 1.4rem; /* ridotto rispetto allo standard */
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+.header {
+  font-size: 1.1rem;
+}
