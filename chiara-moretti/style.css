@@ -25,7 +25,7 @@ h2 {
 .header-table {
   display: flex;
   justify-content: center; /* centra orizzontalmente */
-  margin-top: 6px;
+  margin-top: 2px; /* ridotto ulteriormente */
 }
 
 .header-table table {
