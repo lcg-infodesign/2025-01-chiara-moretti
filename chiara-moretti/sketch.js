@@ -4,14 +4,6 @@ let yMax = 600;
 let table;
 let validRows = [];
 
-// Stato per gestione finestre cliccabili
-let activeGraph = 0; // 0 = nessuno, 1 = primo, 2 = secondo, 3 = terzo
-let windowStates = [false, false, false]; // stato di ogni finestra
-
-// Variabili globali per i bounds delle finestre
-let chart1Left, chart1Right, chart2Left, chart2Right, chart3Left, chart3Right;
-let chartTop, chartBottom;
-
 function preload () {
     table = loadTable("dataset.csv", "csv", "header")
 }
@@ -131,153 +123,47 @@ function setup() {
         renderHeaderTable(headerItems);
     }
 
-    // Calcola i bounds per le finestre
-    calculateWindowBounds();
+    // ---------------- Primo grafico: colonne + linea media (stile Excel) ----------------
+    const left = 120; // aumentato ulteriormente per rendere i grafici ancora meno larghi
+    const right = width - 120;
 
-    // Renderizza le finestre cliccabili
-    renderClickableWindows();
-
-    // Renderizza il grafico attivo se necessario
-    if (activeGraph > 0) {
-        renderActiveGraph();
-    }
-}
-
-// Funzione per calcolare i bounds delle finestre
-function calculateWindowBounds() {
-    // Margini e spazi per layout orizzontale
+    // layout condiviso per avere tre grafici della stessa altezza
+    // spazi ridotti per far stare tutto su una pagina
     const topMargin = 40;
-    const headerGap = 8;
+    const headerGap = 8; // extra space between header and first graph (ridotto)
     const bottomMargin = 20;
-    const leftMargin = 40;
-    const rightMargin = 40;
-    const gapBetween = 20; // spazio orizzontale tra finestre
-    
-    // Calcolo dimensioni per layout orizzontale
-    const totalInnerW = width - leftMargin - rightMargin - gapBetween * 2;
-    const panelWidth = Math.max(150, totalInnerW / 3); // larghezza per ogni finestra
-    const chartTopTemp = topMargin + headerGap;
-    const chartBottomTemp = height - bottomMargin;
-    
-    // Bounds per ogni finestra - assegnazione alle variabili globali
-    chart1Left = leftMargin;
-    chart1Right = chart1Left + panelWidth;
-    chart2Left = chart1Right + gapBetween;
-    chart2Right = chart2Left + panelWidth;
-    chart3Left = chart2Right + gapBetween;
-    chart3Right = chart3Left + panelWidth;
-    chartTop = chartTopTemp;
-    chartBottom = chartBottomTemp;
-}
+    const gapBetween = 40; // spazio tra grafici ridotto
+    const chartsScale = 0.90; // percentuale dello spazio interno da assegnare ai grafici
+    const totalInnerH = height - topMargin - headerGap - bottomMargin - gapBetween * 2;
+    const panelH = Math.max(60, (totalInnerH * chartsScale) / 3); // altezza per ogni pannello
 
-// Funzione per renderizzare le finestre cliccabili
-function renderClickableWindows() {
-    console.log("Rendering windows with bounds:", {
-        chart1Left, chart1Right, chart2Left, chart2Right, chart3Left, chart3Right,
-        chartTop, chartBottom
-    });
-    
-    const titles = [
-        "Istogramma colonna 0 (filtrata)",
-        "Curva normale colonna 1 (filtrata)",
-        "Istogramma colonna 4 (filtrata)"
-    ];
-    
-    const colors = [
-        [120, 170, 250],
-        [120, 170, 250], 
-        [120, 170, 250]
-    ];
-    
-    for (let i = 0; i < 3; i++) {
-        const left = i === 0 ? chart1Left : i === 1 ? chart2Left : chart3Left;
-        const right = i === 0 ? chart1Right : i === 1 ? chart2Right : chart3Right;
-        const top = chartTop;
-        const bottom = chartBottom;
-        
-        // Bordo della finestra
-        stroke(255);
-        strokeWeight(2);
-        noFill();
-        rect(left, top, right - left, bottom - top);
-        
-        // Sfondo semi-trasparente
-        noStroke();
-        fill(colors[i][0], colors[i][1], colors[i][2], 30);
-        rect(left, top, right - left, bottom - top);
-        
-        // Titolo della finestra
-        fill(255);
-        textSize(12);
-        textAlign(CENTER, CENTER);
-        text(titles[i], left + (right - left) / 2, top + (bottom - top) / 2);
-        
-        // Indicatore di click
-        fill(255);
-        textSize(10);
-        textAlign(CENTER, CENTER);
-        text("Click per aprire", left + (right - left) / 2, top + (bottom - top) / 2 + 20);
-    }
-}
-
-// Funzione per renderizzare il grafico attivo
-function renderActiveGraph() {
-    if (activeGraph === 1) {
-        renderGraph1();
-    } else if (activeGraph === 2) {
-        renderGraph2();
-    } else if (activeGraph === 3) {
-        renderGraph3();
-    }
-}
-
-// Funzione per gestire i click
-function mousePressed() {
-    // Controlla se il click è dentro una finestra
-    if (mouseY >= chartTop && mouseY <= chartBottom) {
-        if (mouseX >= chart1Left && mouseX <= chart1Right) {
-            // Click su finestra 1
-            activeGraph = activeGraph === 1 ? 0 : 1;
-            redraw();
-        } else if (mouseX >= chart2Left && mouseX <= chart2Right) {
-            // Click su finestra 2
-            activeGraph = activeGraph === 2 ? 0 : 2;
-            redraw();
-        } else if (mouseX >= chart3Left && mouseX <= chart3Right) {
-            // Click su finestra 3
-            activeGraph = activeGraph === 3 ? 0 : 3;
-            redraw();
-        }
-    }
-}
-
-// Funzione per renderizzare il primo grafico
-function renderGraph1() {
-    const chart1LeftLocal = chart1Left;
-    const chart1RightLocal = chart1Right;
-    const chartTopLocal = chartTop;
-    const chartBottomLocal = chartBottom;
+    const chart1Top = topMargin + headerGap;
+    const chart1Bottom = chart1Top + panelH;
+    const chart2Top = chart1Bottom + gapBetween;
+    const chart2Bottom = chart2Top + panelH;
+    const chart3Top = chart2Bottom + gapBetween;
+    const chart3Bottom = chart3Top + panelH;
 
     // scala Y per i valori di colonna 0
     const dataMin = sortedArr.length > 0 ? Math.min(...sortedArr) : 0;
     const dataMax = sortedArr.length > 0 ? Math.max(...sortedArr) : 1;
     const yForVal0 = (v) => {
         const t = constrain((v - dataMin) / (dataMax - dataMin || 1), 0, 1);
-        return chartBottomLocal - t * (chartBottomLocal - chartTopLocal);
+        return chart1Bottom - t * (chart1Bottom - chart1Top);
     };
 
     // assi
     stroke(200);
     strokeWeight(2);
-    line(chart1LeftLocal, chartBottomLocal, chart1RightLocal, chartBottomLocal); // X
-    line(chart1LeftLocal, chartTopLocal, chart1LeftLocal, chartBottomLocal);     // Y
+    line(left, chart1Bottom, right, chart1Bottom); // X
+    line(left, chart1Top, left, chart1Bottom);     // Y
 
     // titolo del primo grafico
     noStroke();
     fill(255);
-    textSize(8);
+    textSize(10);
     textAlign(LEFT, BOTTOM);
-    text("Istogramma colonna 0 (filtrata) – colonne e linea media", chart1LeftLocal, chartTopLocal - 6);
+    text("Istogramma colonna 0 (filtrata) – colonne e linea media", left, chart1Top - 8);
 
     // tick asse Y con "nice" step in base al range
     const niceStep = (minV, maxV, targetTicks = 8) => {
@@ -298,25 +184,25 @@ function renderGraph1() {
     stroke(170);
     strokeWeight(1);
     fill(255);
-    textSize(8);
+    textSize(10);
     textAlign(RIGHT, CENTER);
     if (dataMax !== dataMin) {
-        const stepY = niceStep(dataMin, dataMax, 6);
+        const stepY = niceStep(dataMin, dataMax, 8);
         const startYVal = Math.ceil(dataMin / stepY) * stepY;
         const endYVal = Math.floor(dataMax / stepY) * stepY;
         for (let v = startYVal; v <= endYVal + 1e-9; v += stepY) {
             const yy = yForVal0(v);
-            line(chart1LeftLocal - 3, yy, chart1LeftLocal, yy);
-            text(nf(v, 1, 0), chart1LeftLocal - 6, yy);
+            line(left - 4, yy, left, yy);
+            text(nf(v, 1, 0), left - 8, yy);
         }
     }
 
     // colonne (campionamento se troppi)
-    const maxBars = 40;
+    const maxBars = 80;
     const stepBars = Math.ceil((sortedArr.length || 1) / maxBars);
     const countBars = Math.ceil(sortedArr.length / stepBars);
-    const gap = 1;
-    const barBand = (chart1RightLocal - chart1LeftLocal) / Math.max(1, countBars);
+    const gap = 2;
+    const barBand = (right - left) / Math.max(1, countBars);
     const barWidth = Math.max(1, barBand - gap);
 
     noStroke();
@@ -324,9 +210,9 @@ function renderGraph1() {
     let barIndex = 0;
     for (let i = 0; i < sortedArr.length; i += stepBars) {
         const v = sortedArr[i];
-        const x1 = chart1LeftLocal + barIndex * barBand + gap * 0.5;
+        const x1 = left + barIndex * barBand + gap * 0.5;
         const yTop = yForVal0(v);
-        rect(x1, yTop, barWidth, chartBottomLocal - yTop);
+        rect(x1, yTop, barWidth, chart1Bottom - yTop);
         barIndex++;
     }
 
@@ -334,52 +220,48 @@ function renderGraph1() {
     stroke(170);
     strokeWeight(1);
     fill(255);
-    textSize(7);
+    textSize(10);
     textAlign(CENTER, TOP);
-    for (let i = 0; i < sortedArr.length; i += 15) {
+    for (let i = 0; i < sortedArr.length; i += 10) {
         const bin = Math.floor(i / stepBars);
-        const tickX = chart1LeftLocal + bin * barBand + gap * 0.5 + barWidth * 0.5;
-        line(tickX, chartBottomLocal, tickX, chartBottomLocal + 4);
-        text(i, tickX, chartBottomLocal + 6);
+        const tickX = left + bin * barBand + gap * 0.5 + barWidth * 0.5;
+        line(tickX, chart1Bottom, tickX, chart1Bottom + 6);
+        text(i, tickX, chart1Bottom + 8);
     }
 
     // linea orizzontale alla media (stile "average line")
     const yAvg = yForVal0(average);
     stroke(240, 120, 90);
     strokeWeight(2);
-    line(chart1LeftLocal, yAvg, chart1RightLocal, yAvg);
+    line(left, yAvg, right, yAvg);
     noStroke();
     fill(240, 120, 90);
-    textSize(7);
     textAlign(LEFT, BOTTOM);
-    text("media = " + nf(average, 1, 2), chart1LeftLocal + 4, yAvg - 3);
+    text("media = " + nf(average, 1, 2), left + 6, yAvg - 4);
 
     // etichette Y min/max per contesto
     fill(255);
     textAlign(RIGHT, CENTER);
-    textSize(7);
-    text(nf(dataMax, 1, 0), chart1LeftLocal - 6, yForVal0(dataMax));
-    text(nf(dataMin, 1, 0), chart1LeftLocal - 6, yForVal0(dataMin));
-}
+    text(nf(dataMax, 1, 0), left - 8, yForVal0(dataMax));
+    text(nf(dataMin, 1, 0), left - 8, yForVal0(dataMin));
 
-// Funzione per renderizzare il secondo grafico
-function renderGraph2() {
-    const chart2LeftLocal = chart2Left;
-    const chart2RightLocal = chart2Right;
-    const chartTopLocal = chartTop;
-    const chartBottomLocal = chartBottom;
+    // ---------------- Secondo grafico: curva normale con banda ±1σ (stile didattico) ----------------
+    const chartTop = chart2Top;
+    const chartBottom = chart2Bottom;
+    const chartLeft = left;
+    const chartRight = right;
 
     // assi
     stroke(200);
     strokeWeight(2);
-    line(chart2LeftLocal, chartBottomLocal, chart2RightLocal, chartBottomLocal); // X
-    line(chart2LeftLocal, chartTopLocal, chart2LeftLocal, chartBottomLocal);     // Y
+    line(chartLeft, chartBottom, chartRight, chartBottom); // X
+    line(chartLeft, chartTop, chartLeft, chartBottom);     // Y
 
     // mapping funzioni per la curva
     const xForVal = (v) => {
-        if (maxVal1 === minVal1) return (chart2LeftLocal + chart2RightLocal) * 0.5;
+        if (maxVal1 === minVal1) return (chartLeft + chartRight) * 0.5;
         const t = constrain((v - minVal1) / (maxVal1 - minVal1), 0, 1);
-        return chart2LeftLocal + t * (chart2RightLocal - chart2LeftLocal);
+        return chartLeft + t * (chartRight - chartLeft);
     };
 
     // normal PDF (non normalizzata verticalmente al canvas)
@@ -392,37 +274,36 @@ function renderGraph2() {
 
     // scala verticale: mappo il picco (mu) a ~85% dell'altezza disponibile
     const peakPdf = normalPdf(mean1, mean1, std1);
-    const usableH = chartBottomLocal - chartTopLocal;
+    const usableH = chartBottom - chartTop;
     const yForPdf = (p) => {
         const t = peakPdf > 0 ? p / peakPdf : 0;
-        return chartBottomLocal - constrain(t, 0, 1) * usableH * 0.85;
+        return chartBottom - constrain(t, 0, 1) * usableH * 0.85;
     };
 
     // ticks asse X ogni 10 unità (valori della colonna 1)
     stroke(170);
     strokeWeight(1);
     fill(255);
-    textSize(7);
+    textSize(10);
     textAlign(CENTER, TOP);
     if (maxVal1 !== minVal1) {
-        const stepX = 20;
+        const stepX = 10;
         const startXVal = Math.ceil(minVal1 / stepX) * stepX;
         const endXVal = Math.floor(maxVal1 / stepX) * stepX;
         for (let v = startXVal; v <= endXVal; v += stepX) {
             const xx = xForVal(v);
-            line(xx, chartBottomLocal, xx, chartBottomLocal + 4);
-            text(v, xx, chartBottomLocal + 6);
+            line(xx, chartBottom, xx, chartBottom + 6);
+            text(v, xx, chartBottom + 8);
         }
     }
 
     // ticks asse Y ogni 10% (0%..100% del picco)
     fill(255);
     textAlign(RIGHT, CENTER);
-    textSize(7);
-    for (let p = 0; p <= 1.00001; p += 0.2) {
+    for (let p = 0; p <= 1.00001; p += 0.1) {
         const yy = yForPdf(peakPdf * p);
-        line(chart2LeftLocal - 3, yy, chart2LeftLocal, yy);
-        text(nf(p * 100, 1, 0) + '%', chart2LeftLocal - 6, yy);
+        line(chartLeft - 4, yy, chartLeft, yy);
+        text(nf(p * 100, 1, 0) + '%', chartLeft - 8, yy);
     }
 
     // banda ±1σ
@@ -430,7 +311,7 @@ function renderGraph2() {
     const bandXR = xForVal(mean1 + std1);
     noStroke();
     fill(240, 120, 90, 60);
-    rect(Math.min(bandXL, bandXR), chartTopLocal, Math.abs(bandXR - bandXL), chartBottomLocal - chartTopLocal);
+    rect(Math.min(bandXL, bandXR), chartTop, Math.abs(bandXR - bandXL), chartBottom - chartTop);
 
     // curva di Gauss
     noFill();
@@ -454,42 +335,35 @@ function renderGraph2() {
 
     stroke(240, 120, 90, 220);
     strokeWeight(2);
-    line(xMu, chartTopLocal, xMu, chartBottomLocal);
+    line(xMu, chartTop, xMu, chartBottom);
 
     stroke(120, 120, 120, 180);
     strokeWeight(1.5);
-    line(xMuL, chartTopLocal, xMuL, chartBottomLocal);
-    line(xMuR, chartTopLocal, xMuR, chartBottomLocal);
+    line(xMuL, chartTop, xMuL, chartBottom);
+    line(xMuR, chartTop, xMuR, chartBottom);
 
     // legenda e testi
     noStroke();
     fill(255);
     textAlign(LEFT, BOTTOM);
-    textSize(8);
-    text("Curva normale colonna 1 (filtrata) – μ e ±1σ", chart2LeftLocal, chartTopLocal - 6);
+    text("Curva normale colonna 1 (filtrata) – μ e ±1σ", chartLeft, chartTop - 8);
     textAlign(LEFT, TOP);
-    textSize(7);
-    text("μ = " + nf(mean1, 1, 2) + ", σ = " + nf(std1, 1, 2), chart2LeftLocal + 3, chartTopLocal + 4);
+    text("μ = " + nf(mean1, 1, 2) + ", σ = " + nf(std1, 1, 2), chartLeft + 4, chartTop + 6);
     textAlign(CENTER, TOP);
     fill(255);
-    textSize(7);
-    text("μ", xMu, chartTopLocal + 4);
-    text("μ−σ", xMuL, chartTopLocal + 4);
-    text("μ+σ", xMuR, chartTopLocal + 4);
-}
+    text("μ", xMu, chartTop + 6);
+    text("μ−σ", xMuL, chartTop + 6);
+    text("μ+σ", xMuR, chartTop + 6);
 
-// Funzione per renderizzare il terzo grafico
-function renderGraph3() {
-    const chart3LeftLocal = chart3Left;
-    const chart3RightLocal = chart3Right;
-    const chartTopLocal = chartTop;
-    const chartBottomLocal = chartBottom;
+    // ---------------- Terzo grafico: istogramma colonna 4 con μ e ±1σ ----------------
+    const chart3Left = left;
+    const chart3Right = right;
 
     // assi
     stroke(200);
     strokeWeight(2);
-    line(chart3LeftLocal, chartBottomLocal, chart3RightLocal, chartBottomLocal); // X
-    line(chart3LeftLocal, chartTopLocal, chart3LeftLocal, chartBottomLocal);     // Y
+    line(chart3Left, chart3Bottom, chart3Right, chart3Bottom); // X
+    line(chart3Left, chart3Top, chart3Left, chart3Bottom);     // Y
 
     // istogramma col4
     const binCount4 = 16;
@@ -506,13 +380,13 @@ function renderGraph3() {
     const maxBin4 = bins4.length ? Math.max(...bins4) : 1;
 
     const xForVal4 = (v) => {
-        if (maxVal4 === minVal4) return (chart3LeftLocal + chart3RightLocal) * 0.5;
+        if (maxVal4 === minVal4) return (chart3Left + chart3Right) * 0.5;
         const t = constrain((v - minVal4) / (maxVal4 - minVal4), 0, 1);
-        return chart3LeftLocal + t * (chart3RightLocal - chart3LeftLocal);
+        return chart3Left + t * (chart3Right - chart3Left);
     };
     const yForCount4 = (c) => {
         const t = maxBin4 ? c / maxBin4 : 0;
-        return chartBottomLocal - t * (chartBottomLocal - chartTopLocal);
+        return chart3Bottom - t * (chart3Bottom - chart3Top);
     };
 
     noStroke();
@@ -524,7 +398,7 @@ function renderGraph3() {
         const x2c = xForVal4(binEndVal);
         const barWc = Math.max(1, x2c - x1c - 1);
         const yTopc = yForCount4(bins4[b]);
-        rect(x1c + 0.5, yTopc, barWc, chartBottomLocal - yTopc);
+        rect(x1c + 0.5, yTopc, barWc, chart3Bottom - yTopc);
     }
 
     // banda ±1σ e linea media per col4
@@ -532,57 +406,54 @@ function renderGraph3() {
     const bandRight4 = xForVal4(mean4 + std4);
     noStroke();
     fill(240, 120, 90, 90);
-    rect(Math.min(bandLeft4, bandRight4), chartTopLocal, Math.abs(bandRight4 - bandLeft4), chartBottomLocal - chartTopLocal);
+    rect(Math.min(bandLeft4, bandRight4), chart3Top, Math.abs(bandRight4 - bandLeft4), chart3Bottom - chart3Top);
 
     // marcatori ai bordi della ±1σ
     stroke(240, 120, 90, 220);
     strokeWeight(2);
-    line(bandLeft4, chartTopLocal, bandLeft4, chartBottomLocal);
-    line(bandRight4, chartTopLocal, bandRight4, chartBottomLocal);
+    line(bandLeft4, chart3Top, bandLeft4, chart3Bottom);
+    line(bandRight4, chart3Top, bandRight4, chart3Bottom);
     noStroke();
     fill(255);
     textAlign(CENTER, TOP);
-    textSize(7);
-    text("μ−σ", bandLeft4, chartTopLocal + 4);
-    text("μ+σ", bandRight4, chartTopLocal + 4);
+    text("μ−σ", bandLeft4, chart3Top + 6);
+    text("μ+σ", bandRight4, chart3Top + 6);
 
     // linea orizzontale alla media (stile grafico 1)
-    const yMean4 = chartTopLocal + (chartBottomLocal - chartTopLocal) * 0.5; // posizione fissa a metà altezza
+    const yMean4 = chart3Top + (chart3Bottom - chart3Top) * 0.5; // posizione fissa a metà altezza
     stroke(240, 120, 90);
     strokeWeight(2);
-    line(chart3LeftLocal, yMean4, chart3RightLocal, yMean4);
+    line(chart3Left, yMean4, chart3Right, yMean4);
     noStroke();
     fill(240, 120, 90);
     textAlign(LEFT, BOTTOM);
-    textSize(7);
-    text("media = " + nf(mean4, 1, 2), chart3LeftLocal + 4, yMean4 - 3);
+    text("media = " + nf(mean4, 1, 2), chart3Left + 6, yMean4 - 4);
 
     // ticks X ogni 10
     stroke(170);
     strokeWeight(1);
     fill(255);
-    textSize(7);
+    textSize(10);
     textAlign(CENTER, TOP);
     if (maxVal4 !== minVal4) {
-        const stepX4 = 20;
+        const stepX4 = 10;
         const startX4 = Math.ceil(minVal4 / stepX4) * stepX4;
         const endX4 = Math.floor(maxVal4 / stepX4) * stepX4;
         for (let v = startX4; v <= endX4; v += stepX4) {
             const xx = xForVal4(v);
-            line(xx, chartBottomLocal, xx, chartBottomLocal + 4);
-            text(v, xx, chartBottomLocal + 6);
+            line(xx, chart3Bottom, xx, chart3Bottom + 6);
+            text(v, xx, chart3Bottom + 8);
         }
     }
 
     // ticks Y ogni 10 (conteggi dell'istogramma)
     textAlign(RIGHT, CENTER);
-    textSize(7);
     if (maxBin4 > 0) {
-        const stepY4 = niceStep(0, maxBin4, 4);
+        const stepY4 = niceStep(0, maxBin4, 6);
         for (let v = 0; v <= maxBin4 + 1e-9; v += stepY4) {
             const yy = yForCount4(v);
-            line(chart3LeftLocal - 3, yy, chart3LeftLocal, yy);
-            text(nf(v, 1, 0), chart3LeftLocal - 6, yy);
+            line(chart3Left - 4, yy, chart3Left, yy);
+            text(nf(v, 1, 0), chart3Left - 8, yy);
         }
     }
 
@@ -590,11 +461,9 @@ function renderGraph3() {
     noStroke();
     fill(255);
     textAlign(LEFT, BOTTOM);
-    textSize(8);
-    text("Istogramma colonna 4 (filtrata) con μ e ±1σ", chart3LeftLocal, chartTopLocal - 6);
+    text("Istogramma colonna 4 (filtrata) con μ e ±1σ", chart3Left, chart3Top - 8);
     textAlign(LEFT, TOP);
-    textSize(7);
-    text("μ = " + nf(mean4, 1, 2) + ", σ = " + nf(std4, 1, 2), chart3LeftLocal + 3, chartTopLocal + 4);
+    text("μ = " + nf(mean4, 1, 2) + ", σ = " + nf(std4, 1, 2), chart3Left + 4, chart3Top + 6);
 }
 
 function windowResized() {
