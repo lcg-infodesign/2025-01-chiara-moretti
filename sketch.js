@@ -4,6 +4,24 @@ let yMax = 600;
 let table;
 let validRows = [];
 
+// Variabili per l'hover del primo grafico
+let hoveredBarIndex = -1;
+let hoveredValue = 0;
+let hoveredX = 0;
+let hoveredY = 0;
+
+// Variabili per l'hover del terzo grafico
+let hoveredBarIndex3 = -1;
+let hoveredValue3 = 0;
+let hoveredX3 = 0;
+let hoveredY3 = 0;
+
+// Variabili per l'hover del secondo grafico
+let hoveredCurveIndex = -1;
+let hoveredCurveValue = 0;
+let hoveredCurveX = 0;
+let hoveredCurveY = 0;
+
 function preload () {
     table = loadTable("dataset.csv", "csv", "header")
 }
@@ -19,6 +37,9 @@ function getAvailableCanvasHeight() {
         return windowHeight;
     }
 }
+
+// Variabili globali per i dati calcolati
+let sortedArr, average, std1, mean1, minVal1, maxVal1, mode2, median3, std4, mean4, minVal4, maxVal4, col1, col4;
 
 function setup() {
     // crea canvas usando l'altezza disponibile così da far stare tutto in una pagina
@@ -40,22 +61,22 @@ function setup() {
 
     // colonna 0 filtrata e media
     let arr = validRows.map(r => r[0]);
-    const sortedArr = [...arr].sort((a, b) => a - b);
+    sortedArr = [...arr].sort((a, b) => a - b);
 
     let sum = 0;
     for (let i = 0; i < arr.length; i++) {
         sum += arr[i];
     }
 
-    let average = arr.length > 0 ? sum / arr.length : 0;
+    average = arr.length > 0 ? sum / arr.length : 0;
     print("average:", average);
 
     // deviazione standard colonna 1 (filtrata)
-    const col1 = validRows.map(r => r[1]);
-    let std1 = 0;
-    let mean1 = 0;
-    let minVal1 = 0;
-    let maxVal1 = 1;
+    col1 = validRows.map(r => r[1]);
+    std1 = 0;
+    mean1 = 0;
+    minVal1 = 0;
+    maxVal1 = 1;
     if (col1.length > 1) {
         mean1 = col1.reduce((a, b) => a + b, 0) / col1.length;
         const sumSq = col1.reduce((a, v) => a + (v - mean1) * (v - mean1), 0);
@@ -66,7 +87,7 @@ function setup() {
 
     // moda colonna 2 (filtrata)
     const col2 = validRows.map(r => r[2]);
-    let mode2 = 0;
+    mode2 = 0;
     if (col2.length > 0) {
         const counts = new Map();
         for (const v of col2) {
@@ -81,47 +102,54 @@ function setup() {
         });
     }
 
-    // media, deviazione standard e mediana colonna 4 (filtrata)
-    const col4 = validRows.map(r => r[4]);
-    let std4 = 0;
-    let mean4 = 0;
-    let median4 = 0;
-    let minVal4 = 0;
-    let maxVal4 = 1;
+    // mediana colonna 3 (filtrata)
+    const col3 = validRows.map(r => r[3]);
+    median3 = 0;
+    if (col3.length > 0) {
+        const sortedCol3 = [...col3].sort((a, b) => a - b);
+        const n3 = sortedCol3.length;
+        if (n3 % 2 === 1) {
+            median3 = sortedCol3[(n3 - 1) / 2];
+        } else {
+            const mid = n3 / 2;
+            median3 = (sortedCol3[mid - 1] + sortedCol3[mid]) / 2;
+        }
+    }
+
+    // media e deviazione standard colonna 4 (filtrata)
+    col4 = validRows.map(r => r[4]);
+    std4 = 0;
+    mean4 = 0;
+    minVal4 = 0;
+    maxVal4 = 1;
     if (col4.length > 1) {
         mean4 = col4.reduce((a, b) => a + b, 0) / col4.length;
         const sumSq4 = col4.reduce((a, v) => a + (v - mean4) * (v - mean4), 0);
         std4 = Math.sqrt(sumSq4 / (col4.length - 1));
         minVal4 = Math.min(...col4);
         maxVal4 = Math.max(...col4);
-        
-        // calcolo mediana
-        const sortedCol4 = [...col4].sort((a, b) => a - b);
-        const n4 = sortedCol4.length;
-        if (n4 % 2 === 1) {
-            median4 = sortedCol4[(n4 - 1) / 2];
-        } else {
-            const mid = n4 / 2;
-            median4 = (sortedCol4[mid - 1] + sortedCol4[mid]) / 2;
-        }
     }
-
-    background(0);
 
     // Prepariamo i valori da mostrare nella tabella header HTML
     let headerItems = [
         {label: 'Media colonna 0 (filtrata)', value: nf(average, 1, 2)},
         {label: 'Dev. std colonna 1 (filtrata)', value: nf(std1, 1, 2)},
         {label: 'Moda colonna 2 (filtrata)', value: nf(mode2, 1, 2)},
+        {label: 'Mediana colonna 3 (filtrata)', value: nf(median3, 1, 2)},
         {label: 'Media colonna 4 (filtrata) μ', value: nf(mean4, 1, 2)},
-        {label: 'Dev. std colonna 4 (filtrata) σ', value: nf(std4, 1, 2)},
-        {label: 'Mediana colonna 4 (filtrata)', value: nf(median4, 1, 2)}
+        {label: 'Dev. std colonna 4 (filtrata) σ', value: nf(std4, 1, 2)}
     ];
 
     // renderizziamo la tabella header (HTML)
     if (typeof document !== 'undefined') {
         renderHeaderTable(headerItems);
     }
+}
+
+function draw() {
+    background(0, 0, 0, 5);
+
+    if (!table) return;
 
     // ---------------- Primo grafico: colonne + linea media (stile Excel) ----------------
     const left = 120; // aumentato ulteriormente per rendere i grafici ancora meno larghi
@@ -206,12 +234,26 @@ function setup() {
     const barWidth = Math.max(1, barBand - gap);
 
     noStroke();
-    fill(120, 170, 250, 200);
     let barIndex = 0;
     for (let i = 0; i < sortedArr.length; i += stepBars) {
         const v = sortedArr[i];
         const x1 = left + barIndex * barBand + gap * 0.5;
         const yTop = yForVal0(v);
+        
+        // Check if mouse is over this bar
+        if (mouseX >= x1 && mouseX <= x1 + barWidth && 
+            mouseY >= yTop && mouseY <= chart1Bottom &&
+            mouseX >= left && mouseX <= right &&
+            mouseY >= chart1Top && mouseY <= chart1Bottom) {
+            hoveredBarIndex = barIndex;
+            hoveredValue = v;
+            hoveredX = x1 + barWidth / 2;
+            hoveredY = yTop;
+            fill(120, 170, 250, 255); // Colore più intenso per hover
+        } else {
+            fill(120, 170, 250, 200); // Colore normale
+        }
+        
         rect(x1, yTop, barWidth, chart1Bottom - yTop);
         barIndex++;
     }
@@ -244,6 +286,34 @@ function setup() {
     textAlign(RIGHT, CENTER);
     text(nf(dataMax, 1, 0), left - 8, yForVal0(dataMax));
     text(nf(dataMin, 1, 0), left - 8, yForVal0(dataMin));
+
+    // Tooltip per hover
+    if (hoveredBarIndex >= 0) {
+        // Background del tooltip
+        noStroke();
+        fill(0, 0, 0, 200);
+        const tooltipW = 80;
+        const tooltipH = 30;
+        const tooltipX = hoveredX - tooltipW / 2;
+        const tooltipY = hoveredY - tooltipH - 10;
+        
+        // Assicurati che il tooltip non esca dai bordi
+        const finalTooltipX = constrain(tooltipX, left, right - tooltipW);
+        const finalTooltipY = constrain(tooltipY, chart1Top, chart1Bottom - tooltipH);
+        
+        rect(finalTooltipX, finalTooltipY, tooltipW, tooltipH, 4);
+        
+        // Testo del tooltip
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(10);
+        text("Valore: " + nf(hoveredValue, 1, 2), finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH / 2);
+        
+        // Linea di collegamento
+        stroke(255, 255, 255, 150);
+        strokeWeight(1);
+        line(hoveredX, hoveredY, finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH);
+    }
 
     // ---------------- Secondo grafico: curva normale con banda ±1σ (stile didattico) ----------------
     const chartTop = chart2Top;
@@ -313,20 +383,48 @@ function setup() {
     fill(240, 120, 90, 60);
     rect(Math.min(bandXL, bandXR), chartTop, Math.abs(bandXR - bandXL), chartBottom - chartTop);
 
+    // Reset hover state per secondo grafico
+    hoveredCurveIndex = -1;
+
     // curva di Gauss
     noFill();
     stroke(120, 170, 250, 220);
     strokeWeight(2);
     beginShape();
     const samples = 200;
+    let curvePoints = [];
     for (let i = 0; i <= samples; i++) {
         const t = i / samples;
         const xVal = minVal1 + t * (maxVal1 - minVal1);
         const px = xForVal(xVal);
         const py = yForPdf(normalPdf(xVal, mean1, std1));
+        curvePoints.push({x: px, y: py, value: xVal});
         vertex(px, py);
     }
     endShape();
+
+    // Check hover sulla curva
+    if (mouseX >= chartLeft && mouseX <= chartRight && 
+        mouseY >= chartTop && mouseY <= chartBottom) {
+        let minDistance = Infinity;
+        let closestIndex = -1;
+        
+        for (let i = 0; i < curvePoints.length; i++) {
+            const point = curvePoints[i];
+            const distance = dist(mouseX, mouseY, point.x, point.y);
+            if (distance < minDistance && distance < 15) { // soglia di 15 pixel
+                minDistance = distance;
+                closestIndex = i;
+            }
+        }
+        
+        if (closestIndex >= 0) {
+            hoveredCurveIndex = closestIndex;
+            hoveredCurveValue = curvePoints[closestIndex].value;
+            hoveredCurveX = curvePoints[closestIndex].x;
+            hoveredCurveY = curvePoints[closestIndex].y;
+        }
+    }
 
     // marcatori verticali a μ−σ, μ, μ+σ
     const xMu = xForVal(mean1);
@@ -355,7 +453,40 @@ function setup() {
     text("μ−σ", xMuL, chartTop + 6);
     text("μ+σ", xMuR, chartTop + 6);
 
-    // ---------------- Terzo grafico: istogramma colonna 4 con μ e ±1σ ----------------
+    // Tooltip per hover del secondo grafico
+    if (hoveredCurveIndex >= 0) {
+        // Background del tooltip
+        noStroke();
+        fill(0, 0, 0, 200);
+        const tooltipW = 80;
+        const tooltipH = 30;
+        const tooltipX = hoveredCurveX - tooltipW / 2;
+        const tooltipY = hoveredCurveY - tooltipH - 10;
+        
+        // Assicurati che il tooltip non esca dai bordi
+        const finalTooltipX = constrain(tooltipX, chartLeft, chartRight - tooltipW);
+        const finalTooltipY = constrain(tooltipY, chartTop, chartBottom - tooltipH);
+        
+        rect(finalTooltipX, finalTooltipY, tooltipW, tooltipH, 4);
+        
+        // Testo del tooltip
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(10);
+        text("X: " + nf(hoveredCurveValue, 1, 2), finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH / 2);
+        
+        // Linea di collegamento
+        stroke(255, 255, 255, 150);
+        strokeWeight(1);
+        line(hoveredCurveX, hoveredCurveY, finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH);
+        
+        // Punto sulla curva
+        noStroke();
+        fill(255, 255, 0);
+        ellipse(hoveredCurveX, hoveredCurveY, 6, 6);
+    }
+
+    // ---------------- Terzo grafico: visualizzazione deviazione standard colonna 4 ----------------
     const chart3Left = left;
     const chart3Right = right;
 
@@ -389,8 +520,11 @@ function setup() {
         return chart3Bottom - t * (chart3Bottom - chart3Top);
     };
 
+    // Reset hover state per terzo grafico
+    hoveredBarIndex3 = -1;
+
+    // disegna le barre dell'istogramma
     noStroke();
-    fill(120, 170, 250, 190);
     for (let b = 0; b < binCount4; b++) {
         const binStartVal = minVal4 + b * binWVal4;
         const binEndVal = binStartVal + binWVal4;
@@ -398,10 +532,25 @@ function setup() {
         const x2c = xForVal4(binEndVal);
         const barWc = Math.max(1, x2c - x1c - 1);
         const yTopc = yForCount4(bins4[b]);
+        
+        // Check if mouse is over this bar
+        if (mouseX >= x1c + 0.5 && mouseX <= x1c + 0.5 + barWc && 
+            mouseY >= yTopc && mouseY <= chart3Bottom &&
+            mouseX >= chart3Left && mouseX <= chart3Right &&
+            mouseY >= chart3Top && mouseY <= chart3Bottom) {
+            hoveredBarIndex3 = b;
+            hoveredValue3 = binStartVal + binWVal4 / 2; // valore centrale del bin
+            hoveredX3 = x1c + 0.5 + barWc / 2;
+            hoveredY3 = yTopc;
+            fill(120, 170, 250, 255); // Colore più intenso per hover
+        } else {
+            fill(120, 170, 250, 190); // Colore normale
+        }
+        
         rect(x1c + 0.5, yTopc, barWc, chart3Bottom - yTopc);
     }
 
-    // banda ±1σ e linea media per col4
+    // banda ±1σ per evidenziare la deviazione standard
     const bandLeft4 = xForVal4(mean4 - std4);
     const bandRight4 = xForVal4(mean4 + std4);
     noStroke();
@@ -413,11 +562,12 @@ function setup() {
     strokeWeight(2);
     line(bandLeft4, chart3Top, bandLeft4, chart3Bottom);
     line(bandRight4, chart3Top, bandRight4, chart3Bottom);
-    noStroke();
-    fill(255);
-    textAlign(CENTER, TOP);
-    text("μ−σ", bandLeft4, chart3Top + 6);
-    text("μ+σ", bandRight4, chart3Top + 6);
+
+    // linea verticale alla media
+    const xMean4 = xForVal4(mean4);
+    stroke(120, 170, 250, 220);
+    strokeWeight(2);
+    line(xMean4, chart3Top, xMean4, chart3Bottom);
 
     // linea orizzontale alla media (stile grafico 1)
     const yMean4 = chart3Top + (chart3Bottom - chart3Top) * 0.5; // posizione fissa a metà altezza
@@ -428,6 +578,14 @@ function setup() {
     fill(240, 120, 90);
     textAlign(LEFT, BOTTOM);
     text("media = " + nf(mean4, 1, 2), chart3Left + 6, yMean4 - 4);
+
+    // etichette per i marcatori
+    noStroke();
+    fill(255);
+    textAlign(CENTER, TOP);
+    text("μ−σ", bandLeft4, chart3Top + 6);
+    text("μ+σ", bandRight4, chart3Top + 6);
+    text("μ", xMean4, chart3Top + 6);
 
     // ticks X ogni 10
     stroke(170);
@@ -461,9 +619,39 @@ function setup() {
     noStroke();
     fill(255);
     textAlign(LEFT, BOTTOM);
-    text("Istogramma colonna 4 (filtrata) con μ e ±1σ", chart3Left, chart3Top - 8);
+    text("Istogramma colonna 4 (filtrata) con deviazione standard ±1σ", chart3Left, chart3Top - 8);
     textAlign(LEFT, TOP);
     text("μ = " + nf(mean4, 1, 2) + ", σ = " + nf(std4, 1, 2), chart3Left + 4, chart3Top + 6);
+
+    // Tooltip per hover del terzo grafico
+    if (hoveredBarIndex3 >= 0) {
+        // Background del tooltip
+        noStroke();
+        fill(0, 0, 0, 200);
+        const tooltipW = 100;
+        const tooltipH = 40;
+        const tooltipX = hoveredX3 - tooltipW / 2;
+        const tooltipY = hoveredY3 - tooltipH - 10;
+        
+        // Assicurati che il tooltip non esca dai bordi
+        const finalTooltipX = constrain(tooltipX, chart3Left, chart3Right - tooltipW);
+        const finalTooltipY = constrain(tooltipY, chart3Top, chart3Bottom - tooltipH);
+        
+        rect(finalTooltipX, finalTooltipY, tooltipW, tooltipH, 4);
+        
+        // Testo del tooltip
+        fill(255);
+        textAlign(CENTER, CENTER);
+        textSize(10);
+        text("Valore: " + nf(hoveredValue3, 1, 2), finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH / 2 - 5);
+        text("Freq: " + bins4[hoveredBarIndex3], finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH / 2 + 5);
+        
+        // Linea di collegamento
+        stroke(255, 255, 255, 150);
+        strokeWeight(1);
+        line(hoveredX3, hoveredY3, finalTooltipX + tooltipW / 2, finalTooltipY + tooltipH);
+    }
+
 }
 
 function windowResized() {

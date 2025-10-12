@@ -30,19 +30,63 @@ h2 {
 
 .header-table table {
   border-collapse: collapse;
-  background: rgba(255,255,255,0.95); /* sfondo chiaro per leggibilità */
-  color: #000; /* testo nero per sfondi bianchi */
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #212529;
   font-size: 0.95rem;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 .header-table th, .header-table td {
-  padding: 6px 12px;
-  border: 1px solid rgba(0,0,0,0.08);
-  text-align: left;
+  padding: 8px 16px;
+  border: none;
+  text-align: center;
+  position: relative;
 }
 
 .header-table th {
   font-weight: 600;
-  background: rgba(0,0,0,0.03);
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+}
+
+.header-table td {
+  background: rgba(255,255,255,0.8);
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.header-table tbody tr:nth-child(even) td {
+  background: rgba(248,249,250,0.8);
+}
+
+.header-table tbody tr:hover td {
+  background: rgba(0,123,255,0.1);
+  transition: background-color 0.2s ease;
+}
+
+.header-table th:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: rgba(255,255,255,0.3);
+}
+
+.header-table td:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: rgba(0,0,0,0.1);
 }
