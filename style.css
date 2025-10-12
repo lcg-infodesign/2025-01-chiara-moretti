@@ -4,6 +4,32 @@ html, body {
   font-family: 'Helvetica', Arial, sans-serif;
 }
 
+/* Titolo principale */
+.main-header {
+  text-align: center;
+  padding: 20px 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.main-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #495057;
+  margin: 0 0 10px 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.main-subtitle {
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #6c757d;
+  margin: 0;
+  line-height: 1.4;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 canvas {
   display: block;
 }

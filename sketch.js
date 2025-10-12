@@ -147,7 +147,7 @@ function setup() {
 }
 
 function draw() {
-    background(0, 0, 0, 5);
+    background(0);
 
     if (!table) return;
 
@@ -160,7 +160,7 @@ function draw() {
     const topMargin = 40;
     const headerGap = 8; // extra space between header and first graph (ridotto)
     const bottomMargin = 20;
-    const gapBetween = 40; // spazio tra grafici ridotto
+    const gapBetween = 60; // spazio tra grafici aumentato
     const chartsScale = 0.90; // percentuale dello spazio interno da assegnare ai grafici
     const totalInnerH = height - topMargin - headerGap - bottomMargin - gapBetween * 2;
     const panelH = Math.max(60, (totalInnerH * chartsScale) / 3); // altezza per ogni pannello
@@ -232,6 +232,9 @@ function draw() {
     const gap = 2;
     const barBand = (right - left) / Math.max(1, countBars);
     const barWidth = Math.max(1, barBand - gap);
+
+    // Reset hover state per primo grafico
+    hoveredBarIndex = -1;
 
     noStroke();
     let barIndex = 0;
